@@ -1,0 +1,172 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "KeyMenuGui"
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local openBtn = Instance.new("TextButton")
+openBtn.Text = "ABRIR MENU"
+openBtn.Size = UDim2.new(0, 120, 0, 40)
+openBtn.Position = UDim2.new(1, -130, 0.5, -20)
+openBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+openBtn.Parent = gui
+
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 260, 0, 260)
+menu.Position = UDim2.new(0.5, -130, 0.5, -130)
+menu.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+menu.Visible = false
+menu.Parent = gui
+
+local keyBox = Instance.new("TextBox")
+keyBox.PlaceholderText = "Digite a Key"
+keyBox.Size = UDim2.new(0.8, 0, 0, 40)
+keyBox.Position = UDim2.new(0.1, 0, 0.1, 0)
+keyBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+keyBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyBox.Parent = menu
+
+local keyBtn = Instance.new("TextButton")
+keyBtn.Text = "Confirmar Key"
+keyBtn.Size = UDim2.new(0.6, 0, 0, 30)
+keyBtn.Position = UDim2.new(0.2, 0, 0.3, 0)
+keyBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+keyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyBtn.Parent = menu
+
+local features = Instance.new("Frame")
+features.Size = UDim2.new(1, 0, 1, 0)
+features.Position = UDim2.new(0, 0, 0, 0)
+features.BackgroundTransparency = 1
+features.Visible = false
+features.Parent = menu
+
+local espBtn = Instance.new("TextButton")
+espBtn.Text = "Ativar ESP"
+espBtn.Size = UDim2.new(0.8, 0, 0, 30)
+espBtn.Position = UDim2.new(0.1, 0, 0.15, 0)
+espBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+espBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+espBtn.Parent = features
+
+local acBtn = Instance.new("TextButton")
+acBtn.Text = "Ativar Anti-Cheat"
+acBtn.Size = UDim2.new(0.8, 0, 0, 30)
+acBtn.Position = UDim2.new(0.1, 0, 0.4, 0)
+acBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+acBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+acBtn.Parent = features
+
+local unlockBtn = Instance.new("TextButton")
+unlockBtn.Text = "Unlock All Gamepasses"
+unlockBtn.Size = UDim2.new(0.8, 0, 0, 30)
+unlockBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
+unlockBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+unlockBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+unlockBtn.Parent = features
+
+local espEnabled = false
+local antiCheatEnabled = false
+local highlights = {}
+
+local function updateESP()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+            if not highlights[plr] then
+                local h = Instance.new("Highlight")
+                h.FillTransparency = 1
+                h.OutlineTransparency = 0
+                h.OutlineColor = (plr.Team == LocalPlayer.Team) and Color3.fromRGB(0, 0, 255) or Color3.fromRGB(255, 0, 0)
+                h.Adornee = plr.Character
+                h.Parent = gui
+                highlights[plr] = h
+            end
+        elseif highlights[plr] then
+            highlights[plr]:Destroy()
+            highlights[plr] = nil
+        end
+    end
+end
+
+local function clearESP()
+    for plr, h in pairs(highlights) do
+        h:Destroy()
+        highlights[plr] = nil
+    end
+end
+
+local function startAntiCheat()
+    if antiCheatEnabled then return end
+    antiCheatEnabled = true
+    task.spawn(function()
+        while antiCheatEnabled do
+            local char = LocalPlayer.Character
+            if char then
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    if humanoid.WalkSpeed > 30 then humanoid.WalkSpeed = 16 end
+                    if humanoid.JumpPower > 100 then humanoid.JumpPower = 50 end
+                end
+            end
+            task.wait(0.2)
+        end
+    end)
+end
+
+local function unlockGamepasses()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local oldNamecall = mt.__namecall
+
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "UserOwnsGamePassAsync" then
+            return true
+        end
+        return oldNamecall(self, ...)
+    end)
+end
+
+openBtn.MouseButton1Click:Connect(function()
+    menu.Visible = not menu.Visible
+end)
+
+keyBtn.MouseButton1Click:Connect(function()
+    local keyInput = keyBox.Text
+    if keyInput == "ROBLOX" or keyInput == "VIP" or keyInput == "OWNER" then
+        keyBox.Visible = false
+        keyBtn.Visible = false
+        features.Visible = true
+    end
+end)
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    if espEnabled then
+        espBtn.Text = "Desativar ESP"
+    else
+        espBtn.Text = "Ativar ESP"
+        clearESP()
+    end
+end)
+
+acBtn.MouseButton1Click:Connect(function()
+    if not antiCheatEnabled then
+        acBtn.Text = "Anti-Cheat Ativado"
+        startAntiCheat()
+    end
+end)
+
+unlockBtn.MouseButton1Click:Connect(function()
+    unlockGamepasses()
+    unlockBtn.Text = "Gamepasses Desbloqueados"
+end)
+
+RunService.Heartbeat:Connect(function()
+    if espEnabled then
+        updateESP()
+    end
+end)
